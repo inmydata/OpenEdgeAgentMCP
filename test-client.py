@@ -15,7 +15,8 @@ transport = StreamableHttpTransport(
         "x-inmydata-server": os.environ.get('INMYDATA_SERVER',"inmydata.com"),
         "x-inmydata-calendar": os.environ.get('INMYDATA_CALENDAR',"default"),
         "x-inmydata-user": os.environ.get('INMYDATA_USER', 'mcp-agent'),
-        "x-inmydata-session-id": os.environ.get('INMYDATA_SESSION_ID', 'mcp-session')
+        "x-inmydata-session-id": os.environ.get('INMYDATA_SESSION_ID', 'mcp-session'),
+        "x-inmydata-session-id": os.environ.get('INMYDATA_TYPE', "")
     }
 )
 client = Client(transport)
@@ -40,15 +41,6 @@ async def main():
         result = await client.call_tool("get_financial_periods", {})
         print(result)
         result = await client.call_tool("get_calendar_period_date_range", {"financial_year":2023, "period_number":3, "period_type":"month"})
-        print(result)
-       
-        async def get_answer_progress_handler(progress: float, total: float | None, message: str | None):
-            print(f"Progress: {message}")
-        result = await client.call_tool(
-            "get_answer_slow", 
-            {"question":"Give me the top 10 stores based on sales of furniture last year?"},
-            progress_handler=get_answer_progress_handler
-        )
         print(result)
 
 
