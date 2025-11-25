@@ -325,65 +325,6 @@ class mcp_utils:
        except Exception as e:
            return json.dumps({"error": str(e)}) 
 
-    async def get_answer(
-        self,
-        question: str,
-        ctx: Optional[Context] = None
-    ) -> str:
-        """
-        Get an answer to a natural language question about inmydata using conversational AI.
-        This operation may take up to a minute and will send progress updates.
-
-        Args:
-            question: Natural language question to ask (e.g., "Give me the top 10 stores this year")
-
-        Returns:
-            JSON string containing the answer, subject used, and any additional metadata
-        """
-        from inmydata.ConversationalData import ConversationalDataDriver
-
-        try:
-            if not self.tenant:
-                return json.dumps({"error": "Tenant not set"})
-
-            driver = ConversationalDataDriver(self.tenant, self.server, self.user, self.session_id, self.api_key)
-
-            # capture the loop that owns ctx before you register the callback
-            loop = asyncio.get_running_loop()
-            progress_counter = 0
-
-            def on_ai_question_update(caller, message):
-                nonlocal progress_counter
-                progress_counter += 1
-                if ctx:
-                    # schedule the coroutine onto the captured loop, thread-safely
-                    fut = asyncio.run_coroutine_threadsafe(
-                        ctx.report_progress(progress=progress_counter, message=message),
-                        loop
-                    )
-
-            driver.on("ai_question_update", on_ai_question_update)
-
-            if ctx:
-                await ctx.report_progress(progress=0, message=f"Starting conversational query: {question}")
-
-            answer = await driver.get_answer(question)
-
-            if ctx:
-                await ctx.report_progress(progress=progress_counter + 1, message=f"Query completed. Subject used: {answer.subject}")
-
-
-            return json.dumps({
-                "answer": answer.answer,
-                "subject": answer.subject,
-                "question": question
-            })
-
-        except Exception as e:
-            if ctx:
-                await ctx.error(f"Error in get_answer: {str(e)}")
-            return json.dumps({"error": str(e)})
-
 
     def get_schema(self) -> str:
         """
@@ -578,7 +519,7 @@ class mcp_utils:
         Returns:
             JSON string with all financial periods
         """
-        from inmydata.CalendarAssistant import CalendarAssistant
+        from inmydata_openedge.CalendarAssistant import CalendarAssistant
 
         try:
             if not self.tenant or not self.calendar:
@@ -627,7 +568,7 @@ class mcp_utils:
         Returns:
             JSON string with start_date, end_date, and period info
         """
-        from inmydata.CalendarAssistant import CalendarAssistant, CalendarPeriodType
+        from inmydata_openedge.CalendarAssistant import CalendarAssistant, CalendarPeriodType
 
         try:
             if not self.tenant or not self.calendar:
