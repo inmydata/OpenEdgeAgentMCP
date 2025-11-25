@@ -1,8 +1,8 @@
-# inmydata MCP Server
+# inmydata OpenEdge MCP Server
 
 ## Overview
 
-This is a Python web application that exposes the [inmydata agents SDK](https://github.com/inmydata/agents) as a Model Context Protocol (MCP) Server. The MCP server enables AI agents to access inmydata's powerful data querying capabilities through a standardized interface.
+This is a Python web application that exposes the [inmydata openedge agents SDK](https://github.com/inmydata/openedge-agents) as a Model Context Protocol (MCP) Server. The MCP server enables AI agents to access PAS or Classic AppServer via inmydata's powerful ABL data querying capabilities through a standardized interface.
 
 ## Project Architecture
 
@@ -10,7 +10,7 @@ This is a Python web application that exposes the [inmydata agents SDK](https://
 
 - **Python 3.11** - Runtime environment
 - **FastMCP** - High-level MCP server framework  
-- **inmydata SDK** - Provides structured data, conversational data, and calendar tools
+- **inmydata SDK** - Provides structured data and calendar tools
 - **pandas** - Data handling for SDK responses
 - **python-dotenv** - Environment variable management
 
@@ -20,7 +20,6 @@ This is a Python web application that exposes the [inmydata agents SDK](https://
 
 - `get_rows_fast` - **FAST PATH (recommended)** - Query data with specific fields and simple filters. Returns clean JSON format optimized for LLMs.
 - `get_top_n_fast` - **FAST PATH for rankings** - Get top/bottom N results by a metric. Much faster than conversational queries.
-- `get_answer_slow` - **SLOW/EXPENSIVE (fallback)** - Natural language queries using conversational AI (supports streaming progress updates via MCP progress notifications)
 - `get_schema` - Get available schema with AI-enhanced dashboard hints and field categorization
 
 #### Calendar Tools
@@ -175,7 +174,8 @@ python -m pip install -r requirements.txt
 ```
 
 ## Recent Changes
-
+- **2025-11-25: OpenEdge specific Agent MCP server forked from the inmydata Agent MCP server**
+  
 - **2025-10-29: Optional OAuth Authentication**
   - **🔐 Configurable Auth Modes**: New `INMYDATA_USE_OAUTH` environment variable enables switching between OAuth and legacy API key authentication
   - **🔄 Backward Compatible**: Defaults to legacy authentication (false) - existing deployments unaffected
@@ -190,13 +190,13 @@ python -m pip install -r requirements.txt
   - **🔐 Query Parameter Auth**: `?tenant=name` support alongside headers
   - **🔍 Enhanced Filtering**: Added `not_contains` operator for text filtering
 
-- 2025-10-08: Improved architecture and progress updates
+- **2025-10-08: Improved architecture and progress updates**
   - Unified SDK interaction via `mcp_utils` helper class
   - Consistent JSON serialization across both servers
   - Documented MCP progress notification API (`session.add_notification_handler('progress', handler)`)
   - Added `requirements.txt` with uvicorn for remote server deployment
   
-- 2025-10-02: Remote deployment support & example client
+- **2025-10-02: Remote deployment support & example client**
   - Added `server_remote.py` with SSE/HTTP transport for remote hosting
   - Implemented secure credential passing via HTTP headers
   - Created Docker deployment configuration
@@ -221,19 +221,3 @@ python -m pip install -r requirements.txt
 ### 📊 Performance Tiers
 
 - **FAST PATH** (`get_rows_fast`, `get_top_n_fast`): Direct warehouse queries - seconds, not minutes
-- **SLOW PATH** (`get_answer_slow`): Conversational AI with natural language - up to 1 minute with progress updates
-
-### 🔄 Streaming Progress Updates
-
-The `get_answer_slow` tool implements streaming progress notifications. As the inmydata SDK processes natural language queries (which can take up to a minute), progress updates are forwarded from the SDK's `ai_question_update` events to MCP progress notifications via `ctx.report_progress()`. MCP clients can receive these updates in real-time by registering a notification handler:
-
-```python
-session.add_notification_handler('progress', handler)
-```
-
-The handler receives progress events with:
-
-- progress: Counter value
-- message: Human-readable progress message
-
-This enables clients to provide real-time feedback during long-running operations.
