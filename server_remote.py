@@ -164,16 +164,6 @@ async def get_tenant(token: str) -> str:
 
 async def utils() -> mcp_utils:
     try:
-        # Get the type from the query string 
-        type = ''
-        try:
-            req = get_http_request()
-            if req is not None:
-                type = req.query_params.get('type', '')
-        except Exception:
-            # If get_http_request isn't available or fails, ignore and fall back to headers
-            type = ''
-
         if INMYDATA_USE_OAUTH:
             # OAuth flow - use bearer token and extract tenant from token
             headers = get_http_headers()
@@ -183,8 +173,7 @@ async def utils() -> mcp_utils:
             calendar = headers.get('x-inmydata-calendar', 'Default')
             user = headers.get('x-inmydata-user', 'mcp-agent')
             session_id = headers.get('x-inmydata-session-id', 'mcp-session')
-            type = headers.get('x-inmydata-type', '')
-            return mcp_utils(api_key, tenant, calendar, user, session_id, server, type)
+            return mcp_utils(api_key, tenant, calendar, user, session_id, server, "OpenEdge")
         else:
             # Legacy flow - use API key from headers or environment variables
             # Fetch headers and request (if available). Preference: query parameter 'tenant' > header 'x-inmydata-tenant'
@@ -212,10 +201,6 @@ async def utils() -> mcp_utils:
             server = headers.get('x-inmydata-server', '')
             if not server:
                 server = os.environ.get('INMYDATA_SERVER',"inmydata.com")
-            
-            type = headers.get('x-inmydata-type', '')
-            if not type:
-                type = os.environ.get('INMYDATA_TYPE',"")
 
             calendar = headers.get('x-inmydata-calendar', '')
             if not calendar:
@@ -223,7 +208,7 @@ async def utils() -> mcp_utils:
             user = headers.get('x-inmydata-user', 'mcp-agent')
             session_id = headers.get('x-inmydata-session-id', 'mcp-session')
 
-            return mcp_utils(api_key, tenant, calendar, user, session_id, server, type)
+            return mcp_utils(api_key, tenant, calendar, user, session_id, server, "OpenEdge")
     except Exception as e:
         raise RuntimeError(f"Error initializing mcp_utils: {e}")
 

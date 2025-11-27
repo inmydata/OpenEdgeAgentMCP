@@ -19,8 +19,7 @@ def utils():
         calendar = os.environ.get('INMYDATA_CALENDAR',"default")
         user = os.environ.get('INMYDATA_USER', 'mcp-agent')
         session_id = os.environ.get('INMYDATA_SESSION_ID', 'mcp-session')
-        type = os.environ.get('INMYDATA_TYPE', '')
-        return mcp_utils(api_key, tenant, calendar, user, session_id, server,type)
+        return mcp_utils(api_key, tenant, calendar, user, session_id, server,"OpenEdge")
     except Exception as e:
         raise RuntimeError(f"Error initializing mcp_utils: {e}")
 
