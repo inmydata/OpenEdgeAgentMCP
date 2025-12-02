@@ -1,10 +1,14 @@
 from decimal import Decimal
+import os
+import tempfile
+import uuid
+import duckdb
 import pandas as pd
 import numpy as np
 from datetime import date, datetime
 import json
 from inmydata_openedge.StructuredData import StructuredDataDriver, AIDataFilter, LogicalOperator, ConditionOperator, TopNOption
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from mcp.server.fastmcp import Context
 import asyncio
 
@@ -172,6 +176,12 @@ class mcp_utils:
             raise ValueError(f"Unsupported logical operator: {logic_raw!r}")
         return LogicalOperator[key]
 
+    def is_int(self, s: str) -> bool:
+        try:
+            int(s)
+            return True
+        except (ValueError, TypeError):
+            return False
 
     def parse_where(
         self,
@@ -223,6 +233,54 @@ class mcp_utils:
 
         return filters
     
+    def save_to_duckdb(
+        self, 
+        rows: pd.DataFrame, 
+        total_rows: int, 
+        default_limit: int = 10
+    ) -> Tuple[pd.DataFrame, str]:
+        """
+        Saves a DataFrame to a DuckDB database if it exceeds a row limit and returns a truncated sample.
+
+        Args:
+            rows (pd.DataFrame): The DataFrame to process.
+            total_rows (int): Total number of rows in the DataFrame.
+            default_limit (int, optional): Default row limit. Defaults to 10.
+
+        Returns:
+            Tuple[pd.DataFrame, str, str]: (truncated DataFrame, path to DuckDB file or empty string if not saved, instance_id for DuckDB file or empty string if not saved)
+        """
+        # Get row limit from environment variable
+        strlimit = os.environ.get("MCP_SAMPLE_ROWS", str(default_limit))
+        limit = int(strlimit) if self.is_int(strlimit) else default_limit
+
+        # Get DuckDB storage location from environment variable
+        duckdblocation = os.environ.get("MCP_DUCKDB_LOCATION", tempfile.gettempdir())
+        
+        duckdb_path = ""
+        instance_id = ""
+        
+        if total_rows > limit:
+            instance_id = str(uuid.uuid4())
+            print(f"Warning: total_rows={total_rows} exceeds threshold; data may be truncated.")
+            
+            # Create in-memory DuckDB and register the DataFrame
+            duckdb_path = os.path.join(duckdblocation, f"{instance_id}.duckdb")
+            con = duckdb.connect(database=duckdb_path)
+            
+            # Register DataFrame as a relation
+            con.register("rows", rows)
+
+            # Persist DataFrame to disk as a real table
+            con.execute("CREATE OR REPLACE TABLE my_table AS SELECT * FROM rows")
+            
+            # Save DuckDB database to disk            
+            con.close()
+                      
+            # Truncate DataFrame for sample
+            rows = rows.head(limit)        
+        return rows, duckdb_path, instance_id    
+    
     async def get_rows(
         self,
         subject: str,
@@ -249,8 +307,14 @@ class mcp_utils:
             if rows is None:
                 return json.dumps({"error": "No data returned from get_data"})
             
-            # Convert DataFrame to simple, LLM-friendly JSON format
             total_rows = len(rows)
+
+            rows, duckdb_file, instanceid = self.save_to_duckdb(rows=rows, total_rows=total_rows)
+            if duckdb_file != "":
+                print(f"DuckDB database saved to: {duckdb_file}")
+            else:
+                print("Data did not exceed row limit; no DuckDB file created.")
+                instanceid = ""
             
             # Convert each cell to JSON-safe types
             records = [
@@ -262,7 +326,8 @@ class mcp_utils:
                 "subject": subject,
                 "row_count": total_rows,
                 "columns": list(map(str, rows.columns)),
-                "data": records
+                "data": records,            
+                "instance_id": instanceid
             }
             
             return json.dumps(result, ensure_ascii=False)
@@ -300,8 +365,14 @@ class mcp_utils:
            if rows is None:
                return json.dumps({"error": "No data returned from get_top_n"})
            
-           # Convert DataFrame to simple, LLM-friendly JSON format
            total_rows = len(rows)
+           rows, duckdb_file, instanceid = self.save_to_duckdb(rows=rows, total_rows=total_rows)
+           
+           if duckdb_file != "":
+               print(f"DuckDB database saved to: {duckdb_file}")
+           else:
+               print("Data did not exceed row limit; no DuckDB file created.")
+               instanceid = ""
            
            # Convert each cell to JSON-safe types
            records = [
@@ -318,13 +389,58 @@ class mcp_utils:
                "system": system,
                "row_count": total_rows,
                "columns": list(map(str, rows.columns)),
-               "data": records
+               "data": records,
+               "instance_id": instanceid
            }
            
            return json.dumps(result, ensure_ascii=False)
        except Exception as e:
            return json.dumps({"error": str(e)}) 
 
+       
+    async def query_results(
+        self,
+        instance_id: str,
+        sql: str
+    ) -> str:
+       """
+        Queries data in a DuckDB database fetching and loaded into that database 
+        by a previous tool call.
+        instance_id: is the instance id of the dataset returned by the tool that created the data
+        this is unique per call to the tool.
+        sql: Is the sql that should be executed against the duckdb database which has a single table
+        call my_table in it.
+        """
+       try:
+           duckdb_location = os.environ.get("MCP_DUCKDB_LOCATION", tempfile.gettempdir())
+
+           rows = None
+           # Create connection
+           con = duckdb.connect(os.path.join(duckdb_location, f"{instance_id}.duckdb"), read_only=False)
+           try:
+             # Execute 
+             result = con.execute(sql)
+             rows = result.df()   # Convert to pandas DataFrame
+       
+           finally:
+             con.close()  # Always close the connection
+           
+           # Convert each cell to JSON-safe types
+           records = [
+               {str(col): self._to_json_safe(val) for col, val in row.items()}
+               for row in rows.to_dict(orient="records")
+           ]
+           
+           result = {           
+               "row_count": len(rows),
+               "columns": list(map(str, rows.columns)),
+               "data": records,               
+               "instance_id": instance_id
+           }
+           
+           return json.dumps(result, ensure_ascii=False)
+       except Exception as e:
+           return json.dumps({"errorX": str(e)}) 
 
     def get_schema(self) -> str:
         """
