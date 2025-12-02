@@ -135,7 +135,7 @@ async def query_results_fast(
            return json.dumps({"error": "sql parameter is required"})
        return await utils().query_results(instance_id, sql)
    except Exception as e:
-       return json.dumps({"errorF": str(e)})    
+       return json.dumps({"error": str(e)})    
 
 @mcp.tool()
 def get_schema() -> str:
