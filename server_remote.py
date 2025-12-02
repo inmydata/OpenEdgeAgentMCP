@@ -245,7 +245,7 @@ async def get_rows_fast(
     where items: [{"field":"Region","op":"equals","value":"North"}, {"field":"Sales Value","op":"gte","value":1000}]
     Allowed ops: equals, contains, not_contains, starts_with, gt, lt, gte, lte
     The summary flag indicates if the data request should use a summary query which will summarize the data based on the fields specified. This is useful when datasets are large and summary=True is the default. If summary flag is set to false then it allows data to be read without being summarized.
-    The system property comes from the System property of the subject selected.    
+    The system property comes from the system property of the subject selected from the schema.   
     """
     try:
         if not subject:

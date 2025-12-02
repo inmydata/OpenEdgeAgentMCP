@@ -308,7 +308,7 @@ class mcp_utils:
                 return json.dumps({"error": "No data returned from get_data"})
             
             total_rows = len(rows)
-
+            
             rows, duckdb_file, instanceid = self.save_to_duckdb(rows=rows, total_rows=total_rows)
             if duckdb_file != "":
                 print(f"DuckDB database saved to: {duckdb_file}")
