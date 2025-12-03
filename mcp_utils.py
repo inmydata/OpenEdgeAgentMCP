@@ -158,6 +158,15 @@ class mcp_utils:
         "starts_with": ConditionOperator.StartsWith
     }
 
+    # --- Operator normalization ---
+    _LOGICAL_ALIASES = {
+        # AND
+        "AND": LogicalOperator.And,
+        "and": LogicalOperator.And,
+        # OR
+        "OR": LogicalOperator.Or,
+        "or": LogicalOperator.Or
+    }
 
     def _normalize_condition_operator(self, op_raw: Optional[str]) -> ConditionOperator:
         if not op_raw:
@@ -167,14 +176,13 @@ class mcp_utils:
             raise ValueError(f"Unsupported operator: {op_raw!r}")
         return self._OP_ALIASES[key]
 
-
     def _normalize_logical_operator(self, logic_raw: Optional[str]) -> LogicalOperator:
         if not logic_raw:
             return LogicalOperator.And
         key = str(logic_raw).strip().upper()
-        if key not in (LogicalOperator.And.value, LogicalOperator.Or.value):
+        if key not in self._LOGICAL_ALIASES:
             raise ValueError(f"Unsupported logical operator: {logic_raw!r}")
-        return LogicalOperator[key]
+        return self._LOGICAL_ALIASES[key]
 
     def is_int(self, s: str) -> bool:
         try:
@@ -189,8 +197,8 @@ class mcp_utils:
     ) -> List[AIDataFilter]:
         """
         Convert `where` items like:
-          {"field":"Region","op":"equals","value":"North"}
-          {"field":"Sales Value","op":"gte","value":1000}
+          {"field":"Region","op":"equals","value":"North","logical":"AND"},
+          {"field":"Sales Value","op":"gte","value":1000,"logical":"AND"}
 
         into AIDataFilter instances with explicit defaults.
         """
@@ -291,10 +299,11 @@ class mcp_utils:
     ) -> str:
         """
         Retrieve rows with a simple AND-only filter list.
-        where: [{"field":"Region","op":"equals","value":"North"}, {"field":"Sales Value","op":"gte","value":1000}]
+        where: [{"field":"Region","op":"equals","value":"North","logical":"AND"}, {"field":"Sales Value","op":"gte","value":1000,"logical":"AND"}]
         summary: True
         system: "sports2000"
         Allowed ops: equals, contains, not_contains, starts_with, gt, lt, gte, lte
+        Allows logical:  AND, OR (default is AND)
         Returns records (<= limit) and total_count if available.
         """
         try:

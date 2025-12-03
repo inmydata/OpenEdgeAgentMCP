@@ -57,15 +57,16 @@ async def get_rows_fast(
       -> get_rows(
            subject="Sales",
            select=["Region", "Average Transaction Value", "Profit Margin %"],
-           where=[{"field":"Financial Year","op":"equals","value":2025}],
+           where=[{"field":"Financial Year","op":"equals","value":2025, "logical":"AND"}],
            summary=True,
            system="sports2000"           
          )
 
-    where items: [{"field":"Region","op":"equals","value":"North"}, {"field":"Sales Value","op":"gte","value":1000}]
+    where items: [{"field":"Region","op":"equals","value":"North","logical":"AND"}, {"field":"Sales Value","op":"gte","value":1000,"logical":"AND"}]
     Allowed ops: equals, contains, not_contains, starts_with, gt, lt, gte, lte
+    Allows logical: AND, OR (default is AND). This is the logical join between multiple conditions.
     The summary flag indicates if the data request should use a summary query which will summarize the data based on the fields specified. This is useful when datasets are large and summary=True is the default. If summary flag is set to false then it allows data to be read without being summarized.
-    The system property comes from the system property of the subject selected from the schema.
+    The system property comes from the value of the system key in the dict of the selected subject. It should ONLY come from that value. The value above is an example only.
     The select list should only contain values that have keys in the factFieldTypes or metricFieldTypes dict of the selected subject    
     """
     try:
@@ -102,7 +103,9 @@ async def get_top_n_fast(
     Example:
     - "Top 10 regions by profit margin in 2025"
       -> get_top_n(subject="Sales", group_by="Region", order_by="Profit Margin %", n=10, system="",
-                   where=[{"field":"Financial Year","op":"equals","value":2025}])
+                   where=[{"field":"Financial Year","op":"equals","value":2025,"logical":"AND"}])
+
+    The system property comes from the value of the system key in the dict of the selected subject. It should ONLY come from that value.     
     """
    try:
        if not subject:
