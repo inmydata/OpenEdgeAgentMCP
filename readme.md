@@ -19,8 +19,9 @@ This is a Python web application that exposes the [inmydata openedge agents SDK]
 #### Data Query Tools
 
 - `get_rows_fast` - **FAST PATH (recommended)** - Query data with specific fields and simple filters. Returns clean JSON format optimized for LLMs.
-- `get_top_n_fast` - **FAST PATH for rankings** - Get top/bottom N results by a metric. Much faster than conversational queries.
+- `get_top_n_fast` - **FAST PATH for rankings** - Get top/bottom N results by a metric.
 - `get_schema` - Get available schema with AI-enhanced dashboard hints and field categorization
+- `query_results_fast` - Queries results with SQL fetched with the get_rows_fast and get_top_n_fast tools and stored in a DuckDB database
 
 #### Calendar Tools
 
@@ -36,6 +37,8 @@ Required environment variables (see `.env.example`):
 - `INMYDATA_CALENDAR` - Your calendar name
 - `INMYDATA_USER` (optional) - User for chart events (default: mcp-agent)
 - `INMYDATA_SESSION_ID` (optional) - Session ID for chart events (default: mcp-session)
+- `MCP_DUCKDB_LOCATION` - Location to use for the DuckDB database
+- `MCP_DEBUG` - For local use only. 0 (default) has no effect. 1 enables debugging to be connected from Visual Studio Code
 
 ### Remote Server Additional Configuration
 
@@ -131,6 +134,7 @@ Enter the following in C:\Users\\\[USERNAME]\AppData\Roaming\Claude\claude_deskt
         "[PATH TO MCP SERVER SRC]\\server.py"
       ],
       "env": {
+        "MCP_DEBUG":"0",
         "INMYDATA_API_KEY":"[API-KEY]",
         "INMYDATA_TENANT": "[TENANT]",
         "INMYDATA_CALENDAR": "[CALENDAR]",
@@ -174,6 +178,8 @@ python -m pip install -r requirements.txt
 ```
 
 ## Recent Changes
+- **2025-12-04: Added support for larger datasets by saving results in DuckDB database and adding a tool to query that.**
+
 - **2025-11-25: OpenEdge specific Agent MCP server forked from the inmydata Agent MCP server**
   
 - **2025-10-29: Optional OAuth Authentication**
