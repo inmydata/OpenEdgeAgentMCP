@@ -421,8 +421,9 @@ class mcp_utils:
         call my_table in it.
         """
        try:
+           print(f"Calling query_results with instance_id={instance_id}, sql={sql}")
            duckdb_location = os.environ.get("MCP_DUCKDB_LOCATION", tempfile.gettempdir())
-
+           print(f"DuckDB file location: {os.path.join(duckdb_location, f"{instance_id}.duckdb")}"  )
            rows = None
            # Create connection
            con = duckdb.connect(os.path.join(duckdb_location, f"{instance_id}.duckdb"), read_only=False)
@@ -430,7 +431,8 @@ class mcp_utils:
              # Execute 
              result = con.execute(sql)
              rows = result.df()   # Convert to pandas DataFrame
-       
+           except Exception as e:
+             print(f"DuckDB query failed: {str(e)}"  )
            finally:
              con.close()  # Always close the connection
            

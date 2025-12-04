@@ -130,7 +130,7 @@ async def query_results_fast(
     This gives direct SQL access to the DuckDB database file saved on disk
     allowing fast and cheap querying of the data.
     Can be used to access larger datasets without needs further querying to get to an answer.
-    The only table in teh database will be named my_table.
+    The only table in the database will be named my_table.
     The columns will be the same as those returned by the tool that produced the dataset.
     You will have a sample of the data in the data property of the output json from the tool that
     produced the dataset.
