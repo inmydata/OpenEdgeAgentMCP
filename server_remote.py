@@ -319,7 +319,7 @@ async def query_results_fast(
            return json.dumps({"error": "instance_id parameter is required"})
        if not sql:
            return json.dumps({"error": "sql parameter is required"})
-       return await utils().query_results(instance_id, sql)
+       return await (await utils()).query_results(instance_id, sql)
    except Exception as e:
        return json.dumps({"error": str(e)})   
 
