@@ -423,7 +423,7 @@ class mcp_utils:
        try:
            print(f"Calling query_results with instance_id={instance_id}, sql={sql}")
            duckdb_location = os.environ.get("MCP_DUCKDB_LOCATION", tempfile.gettempdir())
-           print(f"DuckDB file location: {os.path.join(duckdb_location, f"{instance_id}.duckdb")}"  )
+           print(f"DuckDB file location: {os.path.join(duckdb_location, instance_id + ".duckdb")}"  )
            rows = None
            # Create connection
            con = duckdb.connect(os.path.join(duckdb_location, f"{instance_id}.duckdb"), read_only=False)
